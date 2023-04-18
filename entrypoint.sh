@@ -289,6 +289,9 @@ $body
 # Handler: plan
 ###############
 execute_plan () {
+  info "Starting execute_plan"
+  info "With prepend: $COMMENT_PREPEND"
+  info "With append: $COMMENT_APPEND"
   delete_existing_comments 'plan' '### Terraform `plan` .* for Workspace: `'$WORKSPACE'`.*'
   delete_existing_comments 'outputs' '### Changes to outputs for Workspace: `'$WORKSPACE'`.*'
 
@@ -451,19 +454,6 @@ validate_fail () {
   make_and_post_payload "validate failure" "$pr_comment"
 }
 
-########################
-# Install tf-summarize #
-########################
-
-if [[ $SUMMARY_TABLE == 'true' ]]; then
-  info "Installing tf-summarize..."
-  REPO="dineshba/terraform-plan-summary"
-  curl -LO https://github.com/$REPO/releases/latest/download/tf-summarize_linux_amd64.zip
-  unzip tf-summarize_linux_amd64.zip
-  chmod +x tf-summarize
-  mv tf-summarize /usr/local/bin
-fi
-
 ###################
 # Procedural body #
 ###################
@@ -480,9 +470,6 @@ if [[ $COMMAND == 'init' ]]; then
 fi
 
 if [[ $COMMAND == 'plan' ]]; then
-  info "Starting execute_plan"
-  info "With prepend: $COMMENT_PREPEND"
-  info "With append: $COMMENT_APPEND"
   execute_plan
   exit 0
 fi
