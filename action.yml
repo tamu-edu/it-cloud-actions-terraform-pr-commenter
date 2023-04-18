@@ -9,8 +9,18 @@ inputs:
     description: 'The type of comment. Options: [fmt, init, plan]'
     required: true
   commenter_input:
-    description: 'The comment to post from a previous step output.  Will be trimmed to 64k length.'
+    description: 'The input to format'
     required: true
+  comment_prepend:
+    description: 'Comment body to include before the formatted output'
+    required: false
+  comment_append:
+    description: 'Comment body to append after the formatted output'
+    required: false
+  summary_table:
+    description: 'Include a summary table of resource changes above the plan (applies only to type plan and requires a plan file)'
+    required: false
+    default: 'false'
   commenter_plan_path:
     description: 'The (optional) tfplan file'
     required: false
