@@ -33,6 +33,10 @@ inputs:
     description: 'The version of terraform with which a plan was generated'
     required: false
     default: "1.4.5"
+  working-directory:
+    description: 'Working directory for action'
+    required: false
+    default: "/"
 runs:
   using: "composite"
   steps:
@@ -69,7 +73,7 @@ runs:
         -e COMMENTER_ECHO \
         -e COMMENTER_PLAN_FILE \
         -e COMMENTER_POST_PLAN_OUTPUTS \
-        -v "$(pwd)"/:/workspace \
+        -v "$(pwd)"/${{ inputs.working-directory }}:/workspace \
         commenter ${{ inputs.commenter_type }} ${{ inputs.commenter_exitcode }}
       shell: bash
       if: ${{ inputs.commenter_type == 'plan' }}
