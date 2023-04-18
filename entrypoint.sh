@@ -268,9 +268,6 @@ $body
 # Handler: plan
 ###############
 execute_plan () {
-  info "Starting execute_plan"
-  info "With prepend: $COMMENT_PREPEND"
-  info "With append: $COMMENT_APPEND"
   delete_existing_comments 'plan' '### Terraform `plan` .* for Workspace: `'$WORKSPACE'`.*'
   delete_existing_comments 'outputs' '### Changes to outputs for Workspace: `'$WORKSPACE'`.*'
 
