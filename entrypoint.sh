@@ -55,6 +55,7 @@ parse_args () {
   RAW_INPUT="$COMMENTER_INPUT"
   if test -f "/workspace/${COMMENTER_PLAN_FILE}"; then
     info "Found tfplan; showing."
+    HAS_PLAN_FILE=true
     pushd workspace > /dev/null || (error "Failed to push workspace dir" && exit 1)
     INIT_OUTPUT="$(terraform init 2>&1)"
     INIT_RESULT=$?
@@ -261,11 +262,25 @@ make_details_with_header() {
   local header="### $1"
   local body=$2
   local format=$3
+  if [ "$SUMMARY_TABLE" == 'true' ] && [ -f "/workspace/${COMMENTER_PLAN_FILE}" ]; then
+    local details=$(make_details_with_table "Show Output" "$body" "$format")
+  else
+    local details=$(make_details "Show Output" "$body" "$format")
+  fi
   local pr_comment="$COMMENT_PREPEND
   $header
   $details
   $COMMENT_APPEND"
   echo "$pr_comment"
+}
+
+make_details_with_table() {
+  local table=$(terraform-bin show -json "/workspace/${COMMENTER_PLAN_FILE}" | tf-summarize -md)
+  local summary="$1"
+  local body=$2
+  local format=$3
+  echo "$table
+  $(make_details "$summary" "$body" "$format")"
 }
 
 make_details() {
@@ -446,6 +461,19 @@ validate_fail () {
   local pr_comment=$(make_details_with_header "Terraform \`validate\` Failed" "$INPUT")
   make_and_post_payload "validate failure" "$pr_comment"
 }
+
+########################
+# Install tf-summarize #
+########################
+
+if [[ $SUMMARY_TABLE == 'true' ]]; then
+  info "Installing tf-summarize..."
+  REPO="dineshba/terraform-plan-summary"
+  curl -LO https://github.com/$REPO/releases/latest/download/tf-summarize_linux_amd64.zip
+  unzip tf-summarize_linux_amd64.zip
+  chmod +x tf-summarize
+  mv tf-summarize /usr/local/bin
+fi
 
 ###################
 # Procedural body #
