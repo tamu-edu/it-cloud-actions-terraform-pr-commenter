@@ -263,12 +263,12 @@ make_details_with_header() {
   local header="### $1"
   local body=$2
   local format=$3
+  local prepend=$COMMENT_PREPEND
+  local append=$COMMENT_APPEND
   local pr_comment="$header
-$(echo $COMMENT_PREPEND)
-
+  $prepend
 $(make_details "Show Output" "$body" "$format")
-
-$(echo $COMMENT_APPEND)"
+  $append"
   echo "$pr_comment"
 }
 
@@ -480,6 +480,9 @@ if [[ $COMMAND == 'init' ]]; then
 fi
 
 if [[ $COMMAND == 'plan' ]]; then
+  info "Starting execute_plan"
+  info "With prepend: $COMMENT_PREPEND"
+  info "With append: $COMMENT_APPEND"
   execute_plan
   exit 0
 fi
