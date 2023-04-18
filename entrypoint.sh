@@ -260,20 +260,17 @@ post_diff_comments () {
 }
 
 make_details_with_header() {
-  debug "Making details with header"
   local header="### $1"
   local body=$2
   local format=$3
-  if [ "$SUMMARY_TABLE" == 'true' ] && [ -f "/workspace/${COMMENTER_PLAN_FILE}" ]; then
-    local details=$(make_details_with_table "Show Output" "$body" "$format")
-  else
-    local details=$(make_details "Show Output" "$body" "$format")
-  fi
-  debug "Details: $details"
-  debug "Prepend: $COMMENT_PREPEND"
+  # if [ "$SUMMARY_TABLE" == 'true' ] && [ -f "/workspace/${COMMENTER_PLAN_FILE}" ]; then
+  #   local details=$(make_details_with_table "Show Output" "$body" "$format")
+  # else
+  #   local details=$(make_details "Show Output" "$body" "$format")
+  # fi
   local pr_comment="$COMMENT_PREPEND
   $header
-  $details
+$(make_details "Show Output" "$body" "$format")
   $COMMENT_APPEND"
   echo "$pr_comment"
 }
