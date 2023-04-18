@@ -49,6 +49,7 @@ runs:
         SUMMARY_TABLE: ${{ inputs.summary_table }}
         GITHUB_EVENT: ${{ toJSON(github.event) }}
         AWS_SECRET_ACCESS_KEY: ${{ env.AWS_SECRET_KEY }}
+        COMMENTER_DEBUG: 'true'
       run: |
         docker run \
         -e GITHUB_TOKEN \
