@@ -261,8 +261,10 @@ make_details_with_header() {
   local header="### $1"
   local body=$2
   local format=$3
-  local pr_comment="$header
-$(make_details "Show Output" "$body" "$format")"
+  local pr_comment="$COMMENT_PREPEND
+  $header
+  $details
+  $COMMENT_APPEND"
   echo "$pr_comment"
 }
 
