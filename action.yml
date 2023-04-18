@@ -14,9 +14,11 @@ inputs:
   comment_prepend:
     description: 'Comment body to include before the formatted output'
     required: false
+    default: ''
   comment_append:
     description: 'Comment body to append after the formatted output'
     required: false
+    default: ''
   summary_table:
     description: 'Include a summary table of resource changes above the plan (applies only to type plan and requires a plan file)'
     required: false
