@@ -53,7 +53,6 @@ parse_args () {
   COMMAND=$1
   # Arg 2 is input file. We strip ANSI colours.
   RAW_INPUT="$COMMENTER_INPUT"
-  debug $(ls -la)
   if test -f "/workspace/${COMMENTER_PLAN_FILE}"; then
     info "Found tfplan; showing."
     HAS_PLAN_FILE=true
@@ -245,6 +244,7 @@ post_diff_comments () {
   local comment_count=${#comment_split[@]}
 
   info "Writing $comment_count $type comment(s)"
+  info "Using prepend value: $COMMENT_PREPEND"
 
   for i in "${!comment_split[@]}"; do
     local current="${comment_split[$i]}"
