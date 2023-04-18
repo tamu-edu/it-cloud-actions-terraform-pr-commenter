@@ -53,7 +53,7 @@ parse_args () {
   COMMAND=$1
   # Arg 2 is input file. We strip ANSI colours.
   RAW_INPUT="$COMMENTER_INPUT"
-  ls -la
+  debug $(ls -la)
   if test -f "/workspace/${COMMENTER_PLAN_FILE}"; then
     info "Found tfplan; showing."
     HAS_PLAN_FILE=true
