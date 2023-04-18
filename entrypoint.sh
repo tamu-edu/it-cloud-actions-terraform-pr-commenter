@@ -264,12 +264,12 @@ make_details_with_header() {
   local body=$2
   local format=$3
   local pr_comment="$header
-  $COMMENT_PREPEND
-$(make_details "Show Output" "$body" "$format")
-  $COMMENT_APPEND"
-  echo "$pr_comment"
-}
+$(echo $COMMENT_PREPEND)
 
+$(make_details "Show Output" "$body" "$format")
+
+$(echo $COMMENT_APPEND)"
+  echo "$pr_comment"
 }
 
 make_details() {
