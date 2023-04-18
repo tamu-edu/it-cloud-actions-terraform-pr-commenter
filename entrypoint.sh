@@ -263,11 +263,6 @@ make_details_with_header() {
   local header="### $1"
   local body=$2
   local format=$3
-  # if [ "$SUMMARY_TABLE" == 'true' ] && [ -f "/workspace/${COMMENTER_PLAN_FILE}" ]; then
-  #   local details=$(make_details_with_table "Show Output" "$body" "$format")
-  # else
-  #   local details=$(make_details "Show Output" "$body" "$format")
-  # fi
   local pr_comment="$header
   $COMMENT_PREPEND
 $(make_details "Show Output" "$body" "$format")
@@ -275,13 +270,6 @@ $(make_details "Show Output" "$body" "$format")
   echo "$pr_comment"
 }
 
-make_details_with_table() {
-  local table=$(terraform-bin show -json "/workspace/${COMMENTER_PLAN_FILE}" | tf-summarize -md)
-  local summary="$1"
-  local body=$2
-  local format=$3
-  echo "$table
-  $(make_details "$summary" "$body" "$format")"
 }
 
 make_details() {
