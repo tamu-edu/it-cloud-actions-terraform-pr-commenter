@@ -268,8 +268,8 @@ make_details_with_header() {
   # else
   #   local details=$(make_details "Show Output" "$body" "$format")
   # fi
-  local pr_comment="$COMMENT_PREPEND
-  $header
+  local pr_comment="$header
+  $COMMENT_PREPEND
 $(make_details "Show Output" "$body" "$format")
   $COMMENT_APPEND"
   echo "$pr_comment"
