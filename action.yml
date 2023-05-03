@@ -9,8 +9,20 @@ inputs:
     description: 'The type of comment. Options: [fmt, init, plan]'
     required: true
   commenter_input:
-    description: 'The comment to post from a previous step output.  Will be trimmed to 64k length.'
+    description: 'The input to format'
     required: true
+  comment_prepend:
+    description: 'Comment body to include before the formatted output'
+    required: false
+    default: ''
+  comment_append:
+    description: 'Comment body to append after the formatted output'
+    required: false
+    default: ''
+  summary_table:
+    description: 'Include a summary table of resource changes above the plan (applies only to type plan and requires a plan file)'
+    required: false
+    default: 'false'
   commenter_plan_path:
     description: 'The (optional) tfplan file'
     required: false
@@ -20,31 +32,33 @@ inputs:
   terraform_version:
     description: 'The version of terraform with which a plan was generated'
     required: false
-    default: "1.0.6"
-  use_beta_version:
-    description: 'Whether to use the beta version of the commenter'
+    default: "1.4.5"
+  working-directory:
+    description: 'Working directory for action'
+    required: false
+    default: "/"
+  debug:
+    description: 'Enable debug log output'
     required: false
     default: 'false'
 runs:
   using: "composite"
   steps:
-    - name: Build commenter docker image (master)
-      if: inputs.use_beta_version != 'true'
-      run: docker build --build-arg TERRAFORM_VERSION=${{ inputs.terraform_version }} -t commenter https://github.com/GetTerminus/terraform-pr-commenter.git#master
-      shell: bash
-    - name: Build commenter docker image (beta)
-      if: inputs.use_beta_version == 'true'
-      # append branch with a pound (#) if developing.  e.g., `commenter.git#my-branch`
-      run: docker build --build-arg TERRAFORM_VERSION=${{ inputs.terraform_version }} -t commenter https://github.com/GetTerminus/terraform-pr-commenter.git#v2-beta
+    - name: Build commenter docker image
+      run: |
+        cd ${{ github.action_path }}
+        docker build --build-arg TERRAFORM_VERSION=${{ inputs.terraform_version }} -t commenter .
       shell: bash
     - name: Run commenter image (plan)
       env:
         COMMENTER_INPUT: ${{ inputs.commenter_input }}
+        COMMENT_PREPEND: ${{ inputs.comment_prepend }}
+        COMMENT_APPEND: ${{ inputs.comment_append }}
         COMMENTER_PLAN_FILE: ${{ inputs.commenter_plan_path }}
+        SUMMARY_TABLE: ${{ inputs.summary_table }}
         GITHUB_EVENT: ${{ toJSON(github.event) }}
-        AWS_SECRET_ACCESS_KEY: ${{ env.AWS_SECRET_KEY }}
+        COMMENTER_DEBUG: ${{ inputs.debug }}
       run: |
-        COMMENTER_INPUT=${COMMENTER_INPUT::65000}
         docker run \
         -e GITHUB_TOKEN \
         -e TF_WORKSPACE \
@@ -52,22 +66,24 @@ runs:
         -e HIGHLIGHT_CHANGES \
         -e GITHUB_EVENT \
         -e COMMENTER_INPUT \
-        -e AWS_ACCESS_KEY_ID \
-        -e AWS_SECRET_KEY \
-        -e AWS_SECRET_ACCESS_KEY \
-        -e AWS_REGION \
+        -e COMMENT_PREPEND \
+        -e COMMENT_APPEND \
+        -e SUMMARY_TABLE \
         -e COMMENTER_DEBUG \
         -e COMMENTER_ECHO \
         -e COMMENTER_PLAN_FILE \
         -e COMMENTER_POST_PLAN_OUTPUTS \
-        -v "$(pwd)"/:/workspace \
+        -v "$(pwd)"/${{ inputs.working-directory }}:/workspace \
         commenter ${{ inputs.commenter_type }} ${{ inputs.commenter_exitcode }}
       shell: bash
       if: ${{ inputs.commenter_type == 'plan' }}
     - name: Run commenter image (non-plan)
       env:
         COMMENTER_INPUT: ${{ inputs.commenter_input }}
+        COMMENT_PREPEND: ${{ inputs.comment_prepend }}
+        COMMENT_APPEND: ${{ inputs.comment_append }}
         GITHUB_EVENT: ${{ toJSON(github.event) }}
+        COMMENTER_DEBUG: ${{ inputs.debug }}
       run: |
         docker run \
         -e GITHUB_TOKEN \
@@ -76,6 +92,8 @@ runs:
         -e HIGHLIGHT_CHANGES \
         -e GITHUB_EVENT \
         -e COMMENTER_INPUT \
+        -e COMMENT_PREPEND \
+        -e COMMENT_APPEND \
         -e COMMENTER_DEBUG \
         -e COMMENTER_ECHO \
         commenter ${{ inputs.commenter_type }} ${{ inputs.commenter_exitcode }}

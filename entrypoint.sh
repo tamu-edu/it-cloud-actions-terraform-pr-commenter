@@ -53,26 +53,6 @@ parse_args () {
   COMMAND=$1
   # Arg 2 is input file. We strip ANSI colours.
   RAW_INPUT="$COMMENTER_INPUT"
-  if test -f "/workspace/${COMMENTER_PLAN_FILE}"; then
-    info "Found tfplan; showing."
-    pushd workspace > /dev/null || (error "Failed to push workspace dir" && exit 1)
-    INIT_OUTPUT="$(terraform init 2>&1)"
-    INIT_RESULT=$?
-    if [ $INIT_RESULT -ne 0 ]; then
-       error "Failed pre-plan init.  Init output: \n$INIT_OUTPUT"
-       exit 1
-    fi
-    RAW_INPUT="$( terraform show "${COMMENTER_PLAN_FILE}" 2>&1 )"
-    SHOW_RESULT=$?
-    if [ $SHOW_RESULT -ne 0 ]; then
-       error "Plan failed to show.  Plan output: \n$RAW_INPUT"
-       exit 1
-    fi
-    popd > /dev/null || (error "Failed to pop workspace dir" && exit 1)
-    debug "Plan raw input: $RAW_INPUT"
-  else
-    info "Found no tfplan.  Proceeding with input argument."
-  fi
 
   # change diff character, a red '-', into a high unicode character \U1f605 (literally 😅)
   # iff not preceded by a literal "/" as in "+/-".
@@ -243,6 +223,7 @@ post_diff_comments () {
   local comment_count=${#comment_split[@]}
 
   info "Writing $comment_count $type comment(s)"
+  info "Using prepend value: $COMMENT_PREPEND"
 
   for i in "${!comment_split[@]}"; do
     local current="${comment_split[$i]}"
@@ -261,8 +242,12 @@ make_details_with_header() {
   local header="### $1"
   local body=$2
   local format=$3
+  local prepend=$COMMENT_PREPEND
+  local append=$COMMENT_APPEND
   local pr_comment="$header
-$(make_details "Show Output" "$body" "$format")"
+  $prepend
+$(make_details "Show Output" "$body" "$format")
+  $append"
   echo "$pr_comment"
 }
 
