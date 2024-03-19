@@ -51,8 +51,26 @@ error () {
 parse_args () {
   # Arg 1 is command
   COMMAND=$1
+
+  # Arg 3 is the Terraform CLI exit code
+  EXIT_CODE=$2
+
   # Arg 2 is input file. We strip ANSI colours.
   RAW_INPUT="$COMMENTER_INPUT"
+  debug "COMMENTER_INPUT: $COMMENTER_INPUT"
+
+  if [[ $COMMAND == 'plan' ]]; then
+    if test -f "workspace/${COMMENTER_PLAN_FILE}"; then
+      info "Found commenter plan file."
+      pushd workspace > /dev/null || (error "Failed to push workspace dir" && exit 1)
+      RAW_INPUT="$( cat "${COMMENTER_PLAN_FILE}" 2>&1 )"
+      popd > /dev/null || (error "Failed to pop workspace dir" && exit 1)
+    else
+      info "Found no tfplan file. Using input argument."
+    fi
+  else
+    info "Not terraform plan. Using input argument."
+  fi
 
   # change diff character, a red '-', into a high unicode character \U1f605 (literally 😅)
   # iff not preceded by a literal "/" as in "+/-".
@@ -63,8 +81,11 @@ parse_args () {
   # now remove all ANSI colors
   INPUT=$(echo "$INPUT" | sed -r 's/\x1b\[[0-9;]*m//g')
 
-  # Arg 3 is the Terraform CLI exit code
-  EXIT_CODE=$2
+  # remove terraform debug lines
+  INPUT=$(echo "$INPUT" | sed '/^::debug::Terraform exited with code/,$d')
+
+  # shellcheck disable=SC2034
+  WARNING=$(echo "$INPUT" | grep "│ Warning: " -q && echo "TRUE" || echo "FALSE")
 
   # Read TF_WORKSPACE environment variable or use "default"
   WORKSPACE=${TF_WORKSPACE:-default}
@@ -99,9 +120,46 @@ make_and_post_payload () {
   # Add plan comment to PR.
   local kind=$1
   local pr_payload=$(echo '{}' | jq --arg body "$2" '.body = $body')
+
   info "Adding $kind comment to PR."
+
+  if [[ $COMMENTER_DEBUG == true ]]; then
+    post_comment
+  else
+    post_comment > /dev/null
+  fi
+
   debug "PR payload:\n$pr_payload"
-  curl -sS -X POST -H "$AUTH_HEADER" -H "$ACCEPT_HEADER" -H "$CONTENT_HEADER" -d "$pr_payload" -L "$PR_COMMENTS_URL" > /dev/null
+}
+
+make_details_with_header() {
+  local header="### $1"
+  local body=$2
+  local format=$3
+  local prepend=$COMMENT_PREPEND
+  local append=$COMMENT_APPEND
+  local pr_comment="$header
+  $prepend
+$(make_details "Show Output" "$body" "$format")
+  $append"
+  echo "$pr_comment"
+}
+
+make_details() {
+  local summary="$1"
+  local body=$2
+  local format=$3
+  local details="<details$DETAILS_STATE><summary>$summary</summary>
+
+\`\`\`$format
+$body
+\`\`\`
+</details>"
+  echo "$details"
+}
+
+post_comment () {
+  curl -sS -L -X POST -H "$ACCEPT_HEADER" -H "$AUTH_HEADER" -H "$CONTENT_HEADER" "$PR_COMMENTS_URL" -d "$pr_payload"
 }
 
 # usage:  split_string target_array_name plan_text
@@ -129,6 +187,32 @@ split_string () {
     split+=("$current_iteration")
 
     remaining_string=${entire_string:processed_length}
+  done
+}
+
+post_diff_comments () {
+  local type=$1
+  local comment_prefix=$2
+  local comment_string=$3
+
+  debug "Total $type length: ${#comment_string}"
+  local comment_split
+  split_string comment_split "$comment_string"
+  local comment_count=${#comment_split[@]}
+
+  info "Writing $comment_count $type comment(s)"
+  info "Using prepend value: $COMMENT_PREPEND"
+
+  for i in "${!comment_split[@]}"; do
+    local current="${comment_split[$i]}"
+    local colorized_comment=$(substitute_and_colorize "$current")
+    local comment_count_text=""
+    if [ "$comment_count" -ne 1 ]; then
+      comment_count_text=" ($((i+1))/$comment_count)"
+    fi
+
+    local comment=$(make_details_with_header "$comment_prefix$comment_count_text" "$colorized_comment" "diff")
+    make_and_post_payload "$type" "$comment"
   done
 }
 
@@ -212,57 +296,8 @@ delete_existing_comments () {
   fi
 }
 
-post_diff_comments () {
-  local type=$1
-  local comment_prefix=$2
-  local comment_string=$3
 
-  debug "Total $type length: ${#comment_string}"
-  local comment_split
-  split_string comment_split "$comment_string"
-  local comment_count=${#comment_split[@]}
 
-  info "Writing $comment_count $type comment(s)"
-  info "Using prepend value: $COMMENT_PREPEND"
-
-  for i in "${!comment_split[@]}"; do
-    local current="${comment_split[$i]}"
-    local colorized_comment=$(substitute_and_colorize "$current")
-    local comment_count_text=""
-    if [ "$comment_count" -ne 1 ]; then
-      comment_count_text=" ($((i+1))/$comment_count)"
-    fi
-
-    local comment=$(make_details_with_header "$comment_prefix$comment_count_text" "$colorized_comment" "diff")
-    make_and_post_payload "$type" "$comment"
-  done
-}
-
-make_details_with_header() {
-  local header="### $1"
-  local body=$2
-  local format=$3
-  local prepend=$COMMENT_PREPEND
-  local append=$COMMENT_APPEND
-  local pr_comment="$header
-  $prepend
-$(make_details "Show Output" "$body" "$format")
-  $append"
-  echo "$pr_comment"
-}
-
-make_details() {
-  local summary="$1"
-  local body=$2
-  local format=$3
-  local details="<details$DETAILS_STATE><summary>$summary</summary>
-
-\`\`\`$format
-$body
-\`\`\`
-</details>"
-  echo "$details"
-}
 
 ###############
 # Handler: plan
