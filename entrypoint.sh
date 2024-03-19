@@ -255,48 +255,48 @@ get_page_count () {
   eval "$1"="$last_page"
 }
 
-delete_existing_comments () {
-  # Look for an existing PR comment and delete
-  # debug "Existing comments:  $(curl -sS -H "$AUTH_HEADER" -H "$ACCEPT_HEADER" -L $PR_COMMENTS_URL)"
+# delete_existing_comments () {
+#   # Look for an existing PR comment and delete
+#   # debug "Existing comments:  $(curl -sS -H "$AUTH_HEADER" -H "$ACCEPT_HEADER" -L $PR_COMMENTS_URL)"
 
-  local type=$1
-  local regex=$2
-  local last_page
+#   local type=$1
+#   local regex=$2
+#   local last_page
 
-  local jq='.[] | select(.body|test ("'
-  jq+=$regex
-  jq+='")) | .id'
+#   local jq='.[] | select(.body|test ("'
+#   jq+=$regex
+#   jq+='")) | .id'
 
-  # gross, but... bash.
-  get_page_count PAGE_COUNT
-  last_page=$PAGE_COUNT
-  info "Found $last_page page(s) of comments at $PR_COMMENTS_URL."
+#   # gross, but... bash.
+#   get_page_count PAGE_COUNT
+#   last_page=$PAGE_COUNT
+#   info "Found $last_page page(s) of comments at $PR_COMMENTS_URL."
 
-  info "Looking for an existing $type PR comment."
-  local comment_ids=()
-  for page in $(seq $last_page)
-  do
-    # first, we read *all* of the comment IDs across all pages.  saves us from the problem where we read a page, then
-    # delete some, then read the next page, *after* our page boundary has moved due to the delete.
-      # CAUTION.  this line assumes the PR_COMMENTS_URL already has at least one query parameter. (note the '&')
-    readarray -t -O "${#comment_ids[@]}" comment_ids < <(curl -sS -H "$AUTH_HEADER" -H "$ACCEPT_HEADER" -L "$PR_COMMENTS_URL&page=$page" | jq "$jq")
-  done
+#   info "Looking for an existing $type PR comment."
+#   local comment_ids=()
+#   for page in $(seq $last_page)
+#   do
+#     # first, we read *all* of the comment IDs across all pages.  saves us from the problem where we read a page, then
+#     # delete some, then read the next page, *after* our page boundary has moved due to the delete.
+#       # CAUTION.  this line assumes the PR_COMMENTS_URL already has at least one query parameter. (note the '&')
+#     readarray -t -O "${#comment_ids[@]}" comment_ids < <(curl -sS -H "$AUTH_HEADER" -H "$ACCEPT_HEADER" -L "$PR_COMMENTS_URL&page=$page" | jq "$jq")
+#   done
 
-  for PR_COMMENT_ID in "${comment_ids[@]}"
-  do
-    FOUND=true
-    info "Found existing $type PR comment: $PR_COMMENT_ID. Deleting."
-    PR_COMMENT_URL="$PR_COMMENT_URI/$PR_COMMENT_ID"
-    STATUS=$(curl -sS -X DELETE -H "$AUTH_HEADER" -H "$ACCEPT_HEADER" -o /dev/null -w "%{http_code}" -L "$PR_COMMENT_URL")
-    if [ "$STATUS" != "204"  ]; then
-      info "Failed to delete:  status $STATUS (most likely rate limited)"
-    fi
-  done
+#   for PR_COMMENT_ID in "${comment_ids[@]}"
+#   do
+#     FOUND=true
+#     info "Found existing $type PR comment: $PR_COMMENT_ID. Deleting."
+#     PR_COMMENT_URL="$PR_COMMENT_URI/$PR_COMMENT_ID"
+#     STATUS=$(curl -sS -X DELETE -H "$AUTH_HEADER" -H "$ACCEPT_HEADER" -o /dev/null -w "%{http_code}" -L "$PR_COMMENT_URL")
+#     if [ "$STATUS" != "204"  ]; then
+#       info "Failed to delete:  status $STATUS (most likely rate limited)"
+#     fi
+#   done
 
-  if [ -z $FOUND ]; then
-    info "No existing $type PR comment found."
-  fi
-}
+#   if [ -z $FOUND ]; then
+#     info "No existing $type PR comment found."
+#   fi
+# }
 
 
 
@@ -305,8 +305,8 @@ delete_existing_comments () {
 # Handler: plan
 ###############
 execute_plan () {
-  delete_existing_comments 'plan' '### Terraform `plan` .* for Workspace: `'$WORKSPACE'`.*'
-  delete_existing_comments 'outputs' '### Changes to outputs for Workspace: `'$WORKSPACE'`.*'
+  # delete_existing_comments 'plan' '### Terraform `plan` .* for Workspace: `'$WORKSPACE'`.*'
+  # delete_existing_comments 'outputs' '### Changes to outputs for Workspace: `'$WORKSPACE'`.*'
 
   # Exit Code: 0, 2
   # Meaning: 0 = Terraform plan succeeded with no changes. 2 = Terraform plan succeeded with changes.
@@ -355,7 +355,7 @@ post_outputs_comments() {
 # Handler: fmt
 ##############
 execute_fmt () {
-  delete_existing_comments 'fmt' '### Terraform `fmt` Failed'
+  # delete_existing_comments 'fmt' '### Terraform `fmt` Failed'
 
   # Exit Code: 0
   # Meaning: All files formatted correctly.
@@ -409,7 +409,7 @@ $all_files_diff"
 # Handler: init
 ###############
 execute_init () {
-  delete_existing_comments "init" '### Terraform `init` Failed'
+  # delete_existing_comments "init" '### Terraform `init` Failed'
 
   # Exit Code: 0
   # Meaning: Terraform successfully initialized.
@@ -441,7 +441,7 @@ init_fail () {
 # Handler: validate
 ###################
 execute_validate () {
-  delete_existing_comments "validate" '### Terraform `validate` Failed'
+  # delete_existing_comments "validate" '### Terraform `validate` Failed'
 
   # Exit Code: 0
   # Meaning: Terraform successfully validated.
