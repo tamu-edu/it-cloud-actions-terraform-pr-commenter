@@ -51,9 +51,11 @@ error () {
 parse_args () {
   # Arg 1 is command
   COMMAND=$1
+  debug "COMMAND: $COMMAND"
 
   # Arg 3 is the Terraform CLI exit code
   EXIT_CODE=$2
+  debug "EXIT_CODE: $EXIT_CODE"
 
   # Arg 2 is input file. We strip ANSI colours.
   RAW_INPUT="$COMMENTER_INPUT"
@@ -88,12 +90,14 @@ parse_args () {
   WARNING=$(echo "$INPUT" | grep "│ Warning: " -q && echo "TRUE" || echo "FALSE")
 
   # Read TF_WORKSPACE environment variable or use "default"
+  # shellcheck disable=SC2034
   WORKSPACE=${TF_WORKSPACE:-default}
 
   # Read EXPAND_SUMMARY_DETAILS environment variable or use "true"
   if [[ ${EXPAND_SUMMARY_DETAILS:-true} == "true" ]]; then
     DETAILS_STATE=" open"
   else
+    # shellcheck disable=SC2034
     DETAILS_STATE=""
   fi
 
@@ -128,8 +132,6 @@ make_and_post_payload () {
   else
     post_comment > /dev/null
   fi
-
-  debug "PR payload:\n$pr_payload"
 }
 
 make_details_with_header() {
