@@ -9,8 +9,11 @@ inputs:
     description: 'The type of comment. Options: [fmt, init, plan]'
     required: true
   commenter_input:
-    description: 'The input to format'
-    required: true
+    description: 'The comment to post from a previous step output. This must be trimmed to at least 128 KiB. Required for non plan commenter types.'
+    required: false
+  commenter_plan_path:
+    description: 'The tfplan file. Required if commenter input is not set for plan commenter types.'
+    required: false
   comment_prepend:
     description: 'Comment body to include before the formatted output'
     required: false
@@ -23,16 +26,13 @@ inputs:
     description: 'Include a summary table of resource changes above the plan (applies only to type plan and requires a plan file)'
     required: false
     default: 'false'
-  commenter_plan_path:
-    description: 'The (optional) tfplan file'
-    required: false
   commenter_exitcode:
     description: 'The exit code from a previous step output'
     required: true
   terraform_version:
     description: 'The version of terraform with which a plan was generated'
     required: false
-    default: "1.5.7"
+    default: latest
   working-directory:
     description: 'Working directory for action'
     required: false
